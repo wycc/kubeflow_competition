@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: competition
+  namespace: competition
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+        - name: my-container
+          image: wycca1/competition:1.0.13
+          ports:
+            - containerPort: 8888
+          volumeMounts:
+            - name: data-volume
+              mountPath: /data
+      volumes:
+        - name: data-volume
+          persistentVolumeClaim:
+            claimName: competition-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: competition-service
+  namespace: competition
+spec:
+  selector:
+    app: my-app
+  type: NodePort  # Add this line to specify NodePort type
+  ports:
+    - protocol: TCP
+      port: 8888
+      targetPort: 8888
+
+---
+
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: competition
+  namespace: kubeflow
+spec:
+  gateways:
+  - kubeflow-gateway
+  hosts:
+  - '*'
+  http:
+  - headers:
+      request:
+        add:
+          x-forwarded-prefix: /competition
+    match:
+    - uri:
+        prefix: /competition/
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: competition-service.competition.svc.cluster.local
+        port:
+          number: 8888
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: competition-pvc
+  namespace: competition
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: nfs-client  # Add this line to specify the storage class
+
+
+
+

@@ -8,6 +8,7 @@ from flask import Flask, request
 import os
 import json
 import traceback
+import kubernetes
 
 # Connect to the database
 conn = sqlite3.connect('/data/database.db')
@@ -35,10 +36,86 @@ conn.close()
 
 app = Flask(__name__, static_folder='/app', static_url_path='/')
 
+def detect_manager(email):
+  # search for profile by use the email by using kubernetes client API
+  #load the kubeconfig
+  try:
+    kubernetes.config.load_kube_config()
+  except:
+    kubernetes.config.load_incluster_config()
+  # create the kubernetes client
+  api_instance = kubernetes.client.CustomObjectsApi()
+  # search for the profile by email
+  try:
+    profile = api_instance.get_cluster_custom_object(    
+      group="kubeflow.org",
+      version="v1beta1",
+      plural="profiles",
+    )
+    # search for the manager by the email
+    app.logger.warning("XXXX")
+    app.logger.warning(profile)
+    for user in profile['items']:
+      print(user)
+      try:
+        if user['spec']['owner']['name'] == email:
+          return user["metadata"]["annotations"]["manager"] == "manager"
+      except:
+        pass
+  except Exception as e:
+    print(e)
+  return False
+
 
 @app.route('/')
 def static_root():
   return send_from_directory('/app', 'index.html')
+@app.route('/manager')
+def static_manager():
+  email = request.headers.get('kubeflow-userid')  
+  manager = detect_manager(email)
+  return json.dumps(manager)
+
+
+
+@app.route('/upload-competition', methods=['POST'])
+def upload_competition():
+  file = request.files['file']
+  print(file.filename)
+  try:
+    competition = request.form['competition']
+    path = '/data/competitions/%s' % competition
+    if os.path.exists(path):
+      return {"status": "Error: competition already exists"}
+    os.makedirs(path)
+    file.save('/server/uploads/' + file.filename)
+    # decompress the tgz file
+    os.system('tar -xzf /server/uploads/%s -C %s' % (file.filename, path))
+    # check if the description.txt exist
+    description_file = os.path.join(path, 'description.txt')
+    if not os.path.isfile(description_file):
+      return {"status": "Error: description.txt not found"}
+    # check if the evaluate.opy exist
+    evaluate_file = os.path.join(path, 'evaluate.py')
+    if not os.path.isfile(evaluate_file):
+      return {"status": "Error: evaluate.py not found"}
+  except:
+    print(traceback.format_exc())
+    return {"status": "Error: competition not specified"}
+
+@app.route('/delete-competition', methods=['POST'])
+def delete_competition():
+  try:
+    competition = request.form['competition']
+    path = '/data/competitions/%s' % competition
+    if not os.path.exists(path):
+      return {"status": "Error: competition does not exist"}
+    shutil.rmtree(path)
+    return {"status": "Competition deleted successfully"}
+  except:
+    print(traceback.format_exc())
+    return {"status": "Error: competition not specified"}
+  return {"status": "success"}
 
 
 @app.route('/upload-submission', methods=['POST'])
@@ -51,21 +128,26 @@ def upload_submission():
   except:
     print(traceback.format_exc())
     return {"status": "Error: competition not specified"}
-  file.save('uploads/' + file.filename)
+  file.save('/server/uploads/' + file.filename)
   print(competition)
-  email = request.headers.get('kubeflow-userid')
-  
+  email = request.headers.get('kubeflow-userid')  
+  manager = detect_manager(email)
   # Check if this is a PyTorch weights file
   if file.filename.endswith('.pth'):
     try:
       # Attempt to load the file using torch.load
-      model = torch.load('uploads/' + file.filename)
+      # model = torch.load('uploads/' + file.filename)
+      model_name = 'uploads/' + file.filename
+      os.chdir('/data/competitions/%s' % competition)
+      cmd = 'python3 /data/competitions/%s/evaluate.py %s' % (competition, model_name)
+      # execute cmd and get the result
+      result = json.loads(os.popen(cmd).read())
       
     except Exception as e:
       # If an exception occurs, return an error
       return {"status": "Error loading PyTorch weights file: " + str(e)}
     
-    result = evaluate_model(model)
+    #result = evaluate_model(model)
     print(result)
     # Insert the submission record into the leaderboard table
     # request.form['email']

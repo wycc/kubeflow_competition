@@ -10,8 +10,8 @@ RUN chmod +x /start.sh;mkdir /data
 COPY src/server /server
 COPY requirements.txt /app
 # Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir flask
-RUN conda install -n pytorch flask
+RUN source /opt/conda/bin/activate pytorch; pip install --no-cache-dir flask kubernetes
+RUN conda install -n pytorch flask -y
 # Make port 8888 available to the world outside this container
 EXPOSE 8888
 

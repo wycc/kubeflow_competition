@@ -6,7 +6,7 @@ import { Autocomplete } from '@mui/material';
 import { TextField } from '@mui/material';
 import Submission from './Submission';
 import LeaderBoard from './LeaderBoard';
-
+import Manager from './Manager';
 
 
 export default function App() {
@@ -14,6 +14,7 @@ export default function App() {
   const [selectedCompetition, setSelectedCompetition] = React.useState(null);
   const [competitions, setCompetition] = React.useState([]);
   const [lists, setLists] = React.useState([]);
+  const [manager, setManager] = React.useState(false);
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -30,6 +31,14 @@ export default function App() {
       })
       .catch(error => {
         console.error('Error fetching competitions:', error);
+      });
+    fetch('manager')
+      .then(response => response.json())
+      .then(data => {
+        setManager(data);
+      })
+      .catch(error => {
+        console.error('Error fetching manager:', error);
       });
   }, []);
 
@@ -53,6 +62,7 @@ export default function App() {
           <TabList onChange={handleChange} aria-label="lab API tabs example">
             <Tab label="Submission" value="1" />
             <Tab label="Leader Board" value="2" />
+            {manager && <Tab label="Manager" value="3" />}
           </TabList>
         </Box>
         <TabPanel value="1">
@@ -61,6 +71,10 @@ export default function App() {
         <TabPanel value="2">
           <LeaderBoard competition={selectedCompetition}/>
         </TabPanel>
+        {manager && <TabPanel value="3">
+          <Manager />
+          </TabPanel>
+        }
       </TabContext>
     </div>
   );

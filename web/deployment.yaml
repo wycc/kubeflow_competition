@@ -13,14 +13,26 @@ spec:
       labels:
         app: my-app
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - master-dev
       containers:
         - name: my-container
-          image: wycca1/competition:1.0.13
+          image: wycca1/competition:1.1.6
           ports:
             - containerPort: 8888
           volumeMounts:
             - name: data-volume
               mountPath: /data
+              mountPath: /data
+      serviceAccountName: competition  
+      serviceAccount: competition
       volumes:
         - name: data-volume
           persistentVolumeClaim:
@@ -84,6 +96,40 @@ spec:
       storage: 10Gi
   storageClassName: nfs-client  # Add this line to specify the storage class
 
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: competition
+  namespace: competition
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: competition-role
+  namespace: competition
+rules:
+- apiGroups: ["kubeflow.org"]
+  resources: ["profiles"]
+  verbs: ["get", "list"]
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: competition-role-binding
+  namespace: competition
+subjects:
+- kind: ServiceAccount
+  name: competition
+  namespace: competition
+roleRef:
+  kind: ClusterRole
+  name: competition-role
+  apiGroup: rbac.authorization.k8s.io
 
 
 

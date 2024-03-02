@@ -28,12 +28,14 @@ export default function App() {
         var items = data.map((competition) => { return competition.name});
         setCompetition(data);
         setLists(items);
-        setSelectedCompetition(items[0]);
-        fetch('description?competition='+items[0])
-          .then(response => response.text())
-          .then(data => {
-            setDescription(data);
-          });
+        if (items.length > 0) {
+          setSelectedCompetition(items[0]);
+          fetch('description?competition='+items[0])
+            .then(response => response.text())
+            .then(data => {
+              setDescription(data);
+            });
+        }
       })
       .catch(error => {
         console.error('Error fetching competitions:', error);
@@ -81,7 +83,7 @@ export default function App() {
           <LeaderBoard competition={selectedCompetition}/>
         </TabPanel>
         {manager && <TabPanel value="3">
-          <Manager />
+          <Manager competition={selectedCompetition} />
           </TabPanel>
         }
       </TabContext>

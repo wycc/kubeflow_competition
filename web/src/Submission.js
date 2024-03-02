@@ -52,6 +52,13 @@ export default class Submission extends React.Component {
 
   render() {
     var h = window.innerHeight-185;
+    if (this.props.competition == null) {
+      return (
+        <div>
+          <h1>Competition not found</h1>
+        </div>
+      );
+    }
     return (
       <div>
         <input type="file" onChange={this.handleFileChange} />

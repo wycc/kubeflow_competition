@@ -28,6 +28,15 @@ CREATE TABLE IF NOT EXISTS submissions (
   accurancy REAL          
 )
 ''')
+# create github table with url and name field
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS github (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  url TEXT,               
+  path TEXT,               
+  name TEXT
+)
+''')
 
 # Close the cursor and connection
 cursor.close()
@@ -81,13 +90,121 @@ def static_manager():
   manager = detect_manager(email)
   return json.dumps(manager)
 
+def get_path_by_name(name):
+  conn = sqlite3.connect('/data/database.db')
+  cursor = conn.cursor()
+  cursor.execute('SELECT path FROM github WHERE name="%s"' % name)
+  path = cursor.fetchone()
+  cursor.close()
+  conn.close()
+  return path
+
 @app.route('/description', methods=['GET'])
 def description():
   competition = request.args.get('competition')
-  description_file = '/data/competitions/%s/description.txt' % competition
+  path = get_path_by_name(competition)
+  description_file = '/data/competitions/%s/description.txt' % path
   with open(description_file, 'r') as f:
     description = f.read().strip()
   return description
+
+@app.route('/add_github_competition', methods=['GET'])
+def add_github_compeition():
+  # add github url to the github table of the database
+  # get the url from the request
+  try:
+    url = request.args.get('url')
+    # delete the old repository if it exists
+    os.system('rm -rf /data/competitions/%s' % url.split('/')[-1])
+    # pull the repository
+    r=os.system('git clone %s /data/competitions/%s' % (url, url.split('/')[-1]))
+    if r != 0:
+      return {"status": "Error: failed to clone the repository"}
+    # check the structure of the repository
+    # check if the description.txt exist
+    description_file = os.path.join('/data/competitions/%s' % url.split('/')[-1], 'description.txt')
+    if not os.path.isfile(description_file):
+      return {"status": "Error: description.txt not found"}
+    # check if the evaluate.py exist
+    evaluate_file = os.path.join('/data/competitions/%s' % url.split('/')[-1], 'evaluate.py')
+    if not os.path.isfile(evaluate_file):
+      return {"status": "Error: evaluate.py not found"}
+    # check if the name.txt exist
+    name_file = os.path.join('/data/competitions/%s' % url.split('/')[-1], 'name.txt')
+    if not os.path.isfile(name_file):
+      return {"status": "Error: name.txt not found"}
+    # check if the dataset folder exist
+    dataset_folder = os.path.join('/data/competitions/%s' % url.split('/')[-1], 'dataset')
+    if not os.path.isdir(dataset_folder):
+      return {"status": "Error: dataset folder not found"}
+    # connect to the database
+    conn = sqlite3.connect('/data/database.db')
+    cursor = conn.cursor()
+    # read the name from the name.txt
+    with open(name_file, 'r') as f:
+      name = f.read().strip()
+    # insert the url into the database
+      
+    cursor.execute('''
+      INSERT INTO github (url,name,path)
+      VALUES (?, ?,?)
+    ''', (url,name,url.split('/')[-1]))
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return {"status": "success", "name": name}
+  except:
+    print(traceback.format_exc())
+    return {"status": "Error: failed to add the repository\n"+traceback.format_exc()}
+  
+
+  
+
+  
+  
+
+
+
+
+@app.route('/github-competitions-update', methods=['GET'])
+def github_competitions_update():
+  # read the github table from the database
+  # connect to the database
+  conn = sqlite3.connect('/data/database.db')
+  cursor = conn.cursor()
+  # get name from request
+  name = request.args.get('name')
+  # read the url from the database by using the name
+  cursor.execute('SELECT url FROM github WHERE name="%s"' % name)
+  url = cursor.fetchone()
+  # pull the repository
+  os.system('git pull %s /data/competitions/%s' % (url, name))
+  return {"status": "success"}
+
+@app.route('/delete_github_competition', methods=['GET'])
+def delete_github_competition():
+  # read the github table from the database
+  # connect to the database
+  try:
+    conn = sqlite3.connect('/data/database.db')
+    cursor = conn.cursor()
+    # get name from request
+    name = request.args.get('competition')
+    # read the url from the database by using the name
+    cursor.execute('SELECT url,path FROM github WHERE name="%s"' % name)
+    items = cursor.fetchone()
+    app.logger.warning(items)
+    url,path = items
+    # delete the repository
+    os.system('rm -rf /data/competitions/%s' % path)
+    # delete the record from the database
+    cursor.execute('DELETE FROM github WHERE name="%s"' % name)
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return {"status": "success"}
+  except:
+    return {"status": "Error: failed to delete the repository\n"+traceback.format_exc()}
 
 @app.route('/upload-competition', methods=['POST'])
 def upload_competition():
@@ -114,7 +231,7 @@ def upload_competition():
     print(traceback.format_exc())
     return {"status": "Error: competition not specified"}
 
-@app.route('/delete-competition', methods=['POST'])
+@app.route('/delete_competition', methods=['POST'])
 def delete_competition():
   try:
     competition = request.form['competition']
@@ -136,6 +253,14 @@ def upload_submission():
   print(file.filename)
   try:
     competition = request.form['competition']
+    # query the github table to get the path
+    conn = sqlite3.connect('/data/database.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT path FROM github WHERE name="%s"' % competition)
+    path = cursor.fetchone()
+    competition = path[0]
+    if path == None:
+      return {"status": "Error: competition not found"}
   except:
     print(traceback.format_exc())
     return {"status": "Error: competition not specified"}
@@ -150,16 +275,21 @@ def upload_submission():
       # model = torch.load('uploads/' + file.filename)
       model_name = '/server/uploads/' + file.filename
       os.chdir('/data/competitions/%s' % competition)
+      app.logger.warning(competition)
       cmd = 'python3 /data/competitions/%s/evaluate.py %s' % (competition, model_name)
       # execute cmd and get the result
-      result = json.loads(os.popen(cmd).read())
+      try:
+        ret = os.popen(cmd).read()
+        result = json.loads(ret)
+      except:
+        return {"status": "Error: the return value is not a valid json. "+ret}
       
     except Exception as e:
       # If an exception occurs, return an error
       return {"status": "Error loading PyTorch weights file: " + str(e)}
     
     #result = evaluate_model(model)
-    print(result)
+    app.logger.warning(result)
     # Insert the submission record into the leaderboard table
     # request.form['email']
     try:
@@ -215,26 +345,44 @@ def competitions():
   competitions_dir = '/data/competitions'
   competition_list = []
 
+  # read competitions from the github table
+  conn = sqlite3.connect('/data/database.db')
+  cursor = conn.cursor()
+  cursor.execute('SELECT name,path FROM github')
+  data = cursor.fetchall()
+  cursor.close()
+  conn.close()
+  for row in data:
+    # read description.txt from the directory under /data/competitions/name/description.txt
+    f=open('/data/competitions/%s/description.txt' % row[1], "r")
+    description = f.read()
+
+    competition_list.append({
+      'name': row[0],
+      'description': description
+    })
+
   # Iterate over the folders in the competitions directory
-  for folder_name in os.listdir(competitions_dir):
-    folder_path = os.path.join(competitions_dir, folder_name)
-    if os.path.isdir(folder_path):
-      description_file = os.path.join(folder_path, 'description.txt')
-      print(description_file)
-      if os.path.isfile(description_file):
-        with open(description_file, 'r') as f:
-          description = f.read().strip()
-          competition_list.append({
-            'name': folder_name,
-            'description': description
-          })
+  #for folder_name in os.listdir(competitions_dir):
+  #  folder_path = os.path.join(competitions_dir, folder_name)
+  #  if os.path.isdir(folder_path):
+  #    description_file = os.path.join(folder_path, 'description.txt')
+  #    print(description_file)
+  #    if os.path.isfile(description_file):
+  #      with open(description_file, 'r') as f:
+  #        description = f.read().strip()
+  #        competition_list.append({
+  #          'name': folder_name,
+  #          'description': description
+  #        })
   print(competition_list)
   return jsonify(competition_list)
 
 
 @app.route('/leaderboard', methods=['GET'])
 def leaderboard():
-  competition = request.args.get('competition')
+  competition = get_path_by_name(request.args.get('competition'))
+
   # Fetch data from the leaderboard
   conn = sqlite3.connect('/data/database.db')
   cursor = conn.cursor()

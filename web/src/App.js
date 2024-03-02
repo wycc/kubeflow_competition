@@ -15,6 +15,7 @@ export default function App() {
   const [competitions, setCompetition] = React.useState([]);
   const [lists, setLists] = React.useState([]);
   const [manager, setManager] = React.useState(false);
+  const [description, setDescription] = React.useState(false);
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -28,6 +29,11 @@ export default function App() {
         setCompetition(data);
         setLists(items);
         setSelectedCompetition(items[0]);
+        fetch('description?competition='+items[0])
+          .then(response => response.text())
+          .then(data => {
+            setDescription(data);
+          });
       })
       .catch(error => {
         console.error('Error fetching competitions:', error);
@@ -44,6 +50,9 @@ export default function App() {
 
   const handleCompetitionChange = (event, newValue) => {
     setSelectedCompetition(newValue);
+    fetch('description?competition='+newValue).then(response => response.text()).then(data => {
+      setDescription(data);
+    });
   };
 
   return (
@@ -66,7 +75,7 @@ export default function App() {
           </TabList>
         </Box>
         <TabPanel value="1">
-          <Submission competition={selectedCompetition} />
+          <Submission competition={selectedCompetition} description={description}/>
         </TabPanel>
         <TabPanel value="2">
           <LeaderBoard competition={selectedCompetition}/>

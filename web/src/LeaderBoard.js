@@ -31,9 +31,10 @@ export default class LeaderBoard extends React.Component {
   render() {
     return (
       <table><tbody>
-        {this.state.leaderboard.map((entry, index) => {
+        {this.state.leaderboard.slice(0,20).map((entry, index) => {
           return (
             <tr key={index}>
+              <td style={{width:'100px'}} >{index+1}</td>
               <td style={{width:'100px'}} >{entry.email}</td>
               <td style={{width:'200px'}}>{entry.timestamp}</td>
               <td style={{width:'100px'}}>{entry.accurancy}</td>

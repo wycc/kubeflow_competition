@@ -58,8 +58,8 @@ def detect_manager(email):
       plural="profiles"
     )
     # search for the manager by the email
-    app.logger.warning("XXXX")
-    app.logger.warning(profile)
+    #app.logger.warning("XXXX")
+    #app.logger.warning(profile)
     for user in profile['items']:
       print(user)
       try:
@@ -81,7 +81,13 @@ def static_manager():
   manager = detect_manager(email)
   return json.dumps(manager)
 
-
+@app.route('/description', methods=['GET'])
+def description():
+  competition = request.args.get('competition')
+  description_file = '/data/competitions/%s/description.txt' % competition
+  with open(description_file, 'r') as f:
+    description = f.read().strip()
+  return description
 
 @app.route('/upload-competition', methods=['POST'])
 def upload_competition():
@@ -142,7 +148,7 @@ def upload_submission():
     try:
       # Attempt to load the file using torch.load
       # model = torch.load('uploads/' + file.filename)
-      model_name = 'uploads/' + file.filename
+      model_name = '/server/uploads/' + file.filename
       os.chdir('/data/competitions/%s' % competition)
       cmd = 'python3 /data/competitions/%s/evaluate.py %s' % (competition, model_name)
       # execute cmd and get the result

@@ -42,15 +42,20 @@ def detect_manager(email):
   try:
     kubernetes.config.load_kube_config()
   except:
-    kubernetes.config.load_incluster_config()
+    app.logger.warning("Failed to load kubeconfig, load cluster instead")
+    try:
+      kubernetes.config.load_incluster_config()
+    except:
+      app.logger.warning("Failed to load incluster config")
+      return False
   # create the kubernetes client
   api_instance = kubernetes.client.CustomObjectsApi()
   # search for the profile by email
   try:
-    profile = api_instance.get_cluster_custom_object(    
+    profile = api_instance.list_cluster_custom_object(    
       group="kubeflow.org",
       version="v1beta1",
-      plural="profiles",
+      plural="profiles"
     )
     # search for the manager by the email
     app.logger.warning("XXXX")
@@ -63,7 +68,7 @@ def detect_manager(email):
       except:
         pass
   except Exception as e:
-    print(e)
+    app.logger.warning(e)
   return False
 
 

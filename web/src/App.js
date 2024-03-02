@@ -55,7 +55,7 @@ export default function App() {
         sx={{ width: 300 }}
         value={selectedCompetition}
         onChange={handleCompetitionChange}
-        renderInput={(params) => <TextField {...params} label="Movie" />}
+        renderInput={(params) => <TextField {...params} label="Competition" />}
       />
       <TabContext value={value}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>

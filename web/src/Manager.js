@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Button, TextField } from '@mui/material';
+import { Button, Divider, TextField } from '@mui/material';
 import { Box } from '@mui/system';
 import { LinearProgress } from '@mui/material';
 import Markdown from 'react-markdown';
 import Paper from '@mui/material/Card';
+import ButtonGroup from '@mui/material/ButtonGroup';
 
 const Manager = (props) => {
   const [file, setFile] = useState(null);
@@ -117,7 +118,7 @@ const Manager = (props) => {
     });
   }
   const switch_phase = () => {
-    setStatus('Switching the phase');
+    //setStatus('Switching the phase');
     setProgress(true);
     var newphase = STphase === 'training' ? 'testing' : 'training';
     fetch('change_github_competition_phase?competition='+props.competition+'&phase='+newphase).then(response => response.json()).then(data => {
@@ -140,8 +141,13 @@ const Manager = (props) => {
         Current competition is {props.competition}, which is hosted at {props.url}. You can update the competition 
         from the github or delete the current competition.
         <br/>
-        <Button variant="contained" onClick={delete_github_competition}>Delete current Competition</Button>
-        <Button variant="contained" onClick={update_github_competition}>Update current Competition</Button>
+        <Box sx={{display:'flex'}}>
+          <ButtonGroup>
+            <Button variant="text" onClick={delete_github_competition}>Delete</Button>
+            
+            <Button variant="text" onClick={update_github_competition}>Update</Button>
+          </ButtonGroup>
+        </Box>
       </Paper>
       <br/>
       <br/>
@@ -149,7 +155,7 @@ const Manager = (props) => {
         The behaviour of different phase will be decided by the evaluate.py script in your compeition project.<p/>
         We are in {STphase} now. Do you want to switch to {STphase === 'training' ? 'testing' : 'training'}?
         <br/>
-        <Button variant="contained" onClick={switch_phase}>Switch</Button>
+        <Button variant="text" onClick={switch_phase}>Switch</Button>
       </Paper>
       <br/>
       <Paper>
@@ -171,17 +177,17 @@ Please host your competition project on the github and provide the URL here. You
       </Paper>
       <br/>
       <Paper>
-        <TextField id="url" type="text" label={"URL"} style={{width:'100%'}} onChange={
+        <TextField id="url" type="text" label={"Input github repository URL here"} style={{width:'100%'}} onChange={
           (e) => setURL(e.target.value)
         }/>
         <br/>
         <br/>
 
-        <Button variant="contained" onClick={add_github_competition}>add New Competition</Button>
+        <Button variant="text" onClick={add_github_competition}>add New Competition</Button>
         &nbsp;&nbsp;
         {STprogress && <Box sx={{width:'100%'}}> <LinearProgress /></Box>}
         {STstatus}
-      </Paper>
+        </Paper>
     </div>
   );
 };

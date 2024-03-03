@@ -1,15 +1,18 @@
-import { LinearProgress } from '@mui/material';
+import { Divider, LinearProgress } from '@mui/material';
 import React from 'react';
 import { Box } from '@mui/system';
 import Markdown from 'react-markdown';
 import Paper from '@mui/material/Card';
+import Stack from '@mui/material/Stack';
+import Item from '@mui/material/ListItem';
+import Card from '@mui/material/Card';
 export default class Submission extends React.Component {
   constructor() {
     super();
     // Add your constructor logic here
     this.state = {
       selectedFile: null,
-      status:'Upload your file here',
+      status:'Upload your model here',
       progress: false,
       description:''
     };
@@ -62,22 +65,29 @@ export default class Submission extends React.Component {
     }
     return (
       <div style={{textAlign:'left'}}>
-        <Paper>
-          <input type="file" onChange={this.handleFileChange} />
-          <button onClick={this.handleFileUpload}>Upload</button>
-        </Paper>
-        <br/>
-        <Paper>
-          <div>
-            {this.state.progress && <Box sx={{width:'100%'}}> <LinearProgress /></Box>}
-            {this.state.status}
-          </div>
-          <div style={{overflowY:'scroll',height:h,backgroundColor:'#ddd',textAlign: 'left'}}>
-            <div>
-              <Markdown>{this.props.description}</Markdown>
-            </div>
-          </div>
-        </Paper>
+        <Stack spacing={2}>
+          <Item>
+            <Card>
+                {this.state.progress && <Box sx={{width:'100%'}}> <LinearProgress /></Box>}
+                <div style={{paddingLeft:'20px',paddingRight:'20px',fontSize:'24px',color:'white',backgroundColor:'ActiveCaption'}}>{this.state.status}</div>
+                <Divider />
+                <input type="file" onChange={this.handleFileChange} />
+                <br />
+                <button onClick={this.handleFileUpload}>Upload</button>
+            </Card>
+          </Item>
+          <Item>
+            <Paper elevation={12}>
+              <div style={{textAlign:'center',fontSize:'24px',backgroundColor:'ActiveCaption',color:'white'}}>{this.props.competition}</div>
+              <Divider />
+              <div style={{overflowY:'scroll',height:h,backgroundColor:'#ddd',textAlign: 'left'}}>
+                <div>
+                  <Markdown>{this.props.description}</Markdown>
+                </div>
+              </div>
+            </Paper>
+          </Item>
+        </Stack>
       </div>
     );
   }

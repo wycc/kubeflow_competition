@@ -222,6 +222,14 @@ def delete_github_competition():
     conn.commit()
     cursor.close()
     conn.close()
+    # delete leadedrboard
+    conn = sqlite3.connect('/data/database.db')
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM submissions WHERE competition="%s"' % name)
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
     return {"status": "success"}
   except:
     return {"status": "Error: failed to delete the repository\n"+traceback.format_exc()}

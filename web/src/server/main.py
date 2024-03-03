@@ -117,6 +117,7 @@ def add_github_compeition():
     # delete the old repository if it exists
     os.system('rm -rf /data/competitions/%s' % url.split('/')[-1])
     # pull the repository
+    os.chdir('/data/competitions')
     r=os.system('git clone %s /data/competitions/%s' % (url, url.split('/')[-1]))
     if r != 0:
       return {"status": "Error: failed to clone the repository"}
@@ -229,7 +230,7 @@ def delete_github_competition():
     conn.commit()
     cursor.close()
     conn.close()
-    
+
     return {"status": "success"}
   except:
     return {"status": "Error: failed to delete the repository\n"+traceback.format_exc()}

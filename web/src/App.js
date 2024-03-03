@@ -16,6 +16,7 @@ export default function App() {
   const [lists, setLists] = React.useState([]);
   const [manager, setManager] = React.useState(false);
   const [description, setDescription] = React.useState(false);
+  const [githubUrl, setGithubUrl] = React.useState(false);
 
   const handleChange = (event, newValue) => {
     setValue(newValue);
@@ -31,9 +32,10 @@ export default function App() {
         if (items.length > 0) {
           setSelectedCompetition(items[0]);
           fetch('description?competition='+items[0])
-            .then(response => response.text())
+            .then(response => response.json())
             .then(data => {
-              setDescription(data);
+              setDescription(data[0]);
+              setGithubUrl(data[1])
             });
         }
       })
@@ -52,8 +54,9 @@ export default function App() {
 
   const handleCompetitionChange = (event, newValue) => {
     setSelectedCompetition(newValue);
-    fetch('description?competition='+newValue).then(response => response.text()).then(data => {
-      setDescription(data);
+    fetch('description?competition='+newValue).then(response => response.json()).then(data => {
+      setDescription(data[0]);
+      setGithubUrl(data[1]);
     });
   };
 
@@ -83,7 +86,7 @@ export default function App() {
           <LeaderBoard competition={selectedCompetition}/>
         </TabPanel>
         {manager && <TabPanel value="3">
-          <Manager competition={selectedCompetition} />
+          <Manager competition={selectedCompetition} url={githubUrl} />
           </TabPanel>
         }
       </TabContext>

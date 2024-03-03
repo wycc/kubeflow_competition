@@ -3,6 +3,8 @@ import { Button, TextField } from '@mui/material';
 import { Box } from '@mui/system';
 import { LinearProgress } from '@mui/material';
 import Markdown from 'react-markdown';
+import Paper from '@mui/material/Card';
+
 const Manager = (props) => {
   const [file, setFile] = useState(null);
   const [url, setURL] = useState('');
@@ -89,10 +91,33 @@ const Manager = (props) => {
       }
     });
   }
+  const update_github_competition = () => {
+    setStatus('Updating the competition');
+    setProgress(true);
+    fetch('update_github_competition?competition='+props.competition).then(response => response.json()).then(data => {
+      console.log(data);
+      if (data['status'] === 'success') {
+        window.location.reload();
+        //this.setState({status: 'Competition '+data['competition']+' uploaded successfully'});
+      } else {
+        alert('Failed to upload the competition: ' + data['status']);
+        setProgress(false);
+        //this.setState({status: 'Failed to upload the competition: ' + data['status']});
+      }
+    });
+  }
 
   return (
     <div style={{textAlign:'left'}}>
-      <div>
+      <Paper>
+        Current competition is {props.competition}, which is hosted at {props.url}. You can update the competition 
+        from the github or delete the current competition.
+        <br/>
+        <Button variant="contained" onClick={delete_github_competition}>Delete current Competition</Button>
+        <Button variant="contained" onClick={update_github_competition}>Update current Competition</Button>
+      </Paper>
+      <br/>
+      <Paper>
 Please host your competition project on the github and provide the URL here. You need to have
 <ul>
 <li>description.txt
@@ -108,16 +133,20 @@ Please host your competition project on the github and provide the URL here. You
   <ul><li> the display name of the competition. The name will be displayed in the dropdown menu of the competition selection.</li></ul>
 </li>
 </ul>
-      </div>
-      <TextField id="url" type="text" label={"URL"} style={{width:'100%'}} onChange={
-        (e) => setURL(e.target.value)
-      }/>
+      </Paper>
       <br/>
-      <Button variant="contained" onClick={add_github_competition}>add New Competition</Button>
-      &nbsp;&nbsp;
-      <Button variant="contained" onClick={delete_github_competition}>Delete current Competition</Button>
-      {STprogress && <Box sx={{width:'100%'}}> <LinearProgress /></Box>}
-      {STstatus}
+      <Paper>
+        <TextField id="url" type="text" label={"URL"} style={{width:'100%'}} onChange={
+          (e) => setURL(e.target.value)
+        }/>
+        <br/>
+        <br/>
+
+        <Button variant="contained" onClick={add_github_competition}>add New Competition</Button>
+        &nbsp;&nbsp;
+        {STprogress && <Box sx={{width:'100%'}}> <LinearProgress /></Box>}
+        {STstatus}
+      </Paper>
     </div>
   );
 };

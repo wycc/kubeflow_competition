@@ -90,23 +90,23 @@ def static_manager():
   manager = detect_manager(email)
   return json.dumps(manager)
 
-def get_path_by_name(name):
+def get_competition_by_name(name):
   conn = sqlite3.connect('/data/database.db')
   cursor = conn.cursor()
-  cursor.execute('SELECT path FROM github WHERE name="%s"' % name)
-  path = cursor.fetchone()
+  cursor.execute('SELECT path,url FROM github WHERE name="%s"' % name)
+  path,url = cursor.fetchone()
   cursor.close()
   conn.close()
-  return path
+  return path,url
 
 @app.route('/description', methods=['GET'])
 def description():
   competition = request.args.get('competition')
-  path = get_path_by_name(competition)
+  path,url = get_competition_by_name(competition)
   description_file = '/data/competitions/%s/description.txt' % path
   with open(description_file, 'r') as f:
     description = f.read().strip()
-  return description
+  return [description,url]
 
 @app.route('/add_github_competition', methods=['GET'])
 def add_github_compeition():
@@ -179,6 +179,26 @@ def github_competitions_update():
   url = cursor.fetchone()
   # pull the repository
   os.system('git pull %s /data/competitions/%s' % (url, name))
+  return {"status": "success"}
+
+@app.route('/update_github_competition', methods=['GET'])
+def update_github_competition():
+  # read the github table from the database
+  # connect to the database
+  try:
+    conn = sqlite3.connect('/data/database.db')
+    cursor = conn.cursor()
+    # get name from request
+    name = request.args.get('competition')
+    # read the url from the database by using the name
+    cursor.execute('SELECT url,path FROM github WHERE name="%s"' % name)
+    url,path = cursor.fetchone()
+    # pull the repository
+    if os.system('cd /data/competitions/%s;git pull' % (path)) != 0:
+      return {"status": "Error: failed to pull the repository"}
+  except:
+    return {"status": "Error: failed to pull the repository\n"+traceback.format_exc()}
+  
   return {"status": "success"}
 
 @app.route('/delete_github_competition', methods=['GET'])
@@ -381,7 +401,7 @@ def competitions():
 
 @app.route('/leaderboard', methods=['GET'])
 def leaderboard():
-  competition = get_path_by_name(request.args.get('competition'))
+  competition,_ = get_competition_by_name(request.args.get('competition'))
 
   # Fetch data from the leaderboard
   conn = sqlite3.connect('/data/database.db')

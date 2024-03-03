@@ -32,11 +32,12 @@ export default class LeaderBoard extends React.Component {
     return (
       <table><tbody>
         {this.state.leaderboard.slice(0,20).map((entry, index) => {
+          var date = new Date(entry.timestamp).toLocaleDateString()+" "+new Date(entry.timestamp).toLocaleTimeString();
           return (
             <tr key={index}>
               <td style={{width:'100px'}} >{index+1}</td>
               <td style={{width:'100px'}} >{entry.email}</td>
-              <td style={{width:'200px'}}>{entry.timestamp}</td>
+              <td style={{width:'200px'}}>{date}</td>
               <td style={{width:'100px'}}>{entry.accurancy}</td>
             </tr>
           );

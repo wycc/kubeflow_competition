@@ -9,6 +9,7 @@ import os
 import json
 import traceback
 import kubernetes
+import datetime
 
 # Connect to the database
 conn = sqlite3.connect('/data/database.db')
@@ -211,11 +212,12 @@ def delete_github_competition():
     cursor = conn.cursor()
     # get name from request
     name = request.args.get('competition')
+    
     # read the url from the database by using the name
-    cursor.execute('SELECT url,path FROM github WHERE name="%s"' % name)
+    cursor.execute('SELECT name,path FROM github WHERE name="%s"' % name)
     items = cursor.fetchone()
     app.logger.warning(items)
-    url,path = items
+    name,path = items
     # delete the repository
     os.system('rm -rf /data/competitions/%s' % path)
     # delete the record from the database
@@ -285,9 +287,9 @@ def upload_submission():
     # query the github table to get the path
     conn = sqlite3.connect('/data/database.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT path FROM github WHERE name="%s"' % competition)
-    path = cursor.fetchone()
-    competition = path[0]
+    cursor.execute('SELECT name,path FROM github WHERE name="%s"' % competition)
+    name,path = cursor.fetchone()
+    competition = name
     if path == None:
       return {"status": "Error: competition not found"}
   except:
@@ -303,9 +305,9 @@ def upload_submission():
       # Attempt to load the file using torch.load
       # model = torch.load('uploads/' + file.filename)
       model_name = '/server/uploads/' + file.filename
-      os.chdir('/data/competitions/%s' % competition)
+      os.chdir('/data/competitions/%s' % path)
       app.logger.warning(competition)
-      cmd = 'python3 /data/competitions/%s/evaluate.py %s' % (competition, model_name)
+      cmd = 'python3 /data/competitions/%s/evaluate.py %s' % (path, model_name)
       # execute cmd and get the result
       try:
         ret = os.popen(cmd).read()
@@ -410,12 +412,11 @@ def competitions():
 
 @app.route('/leaderboard', methods=['GET'])
 def leaderboard():
-  competition,_ = get_competition_by_name(request.args.get('competition'))
-
+  
   # Fetch data from the leaderboard
   conn = sqlite3.connect('/data/database.db')
   cursor = conn.cursor()
-  cursor.execute('SELECT email, timestamp,accurancy FROM submissions WHERE competition="%s" ORDER BY accurancy DESC' % competition)
+  cursor.execute('SELECT email, timestamp,accurancy FROM submissions WHERE competition="%s" ORDER BY accurancy DESC' % request.args.get('competition'))
   data = cursor.fetchall()
   cursor.close()
   conn.close()
@@ -425,7 +426,7 @@ def leaderboard():
   for row in data:
     leaderboard_data.append({
       'email': row[0],
-      'timestamp': row[1],
+      'timestamp': row[1]+' GMT+0000',
       'accurancy': row[2]
     })
   

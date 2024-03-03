@@ -26,7 +26,8 @@ CREATE TABLE IF NOT EXISTS submissions (
   competition TEXT,               
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   email TEXT,
-  accurancy REAL          
+  accurancy REAL,
+  phase TEXT DEFAULT "training"
 )
 ''')
 # create github table with url and name field
@@ -35,9 +36,12 @@ CREATE TABLE IF NOT EXISTS github (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   url TEXT,               
   path TEXT,               
-  name TEXT
+  name TEXT,
+  phase TEXT DEFAULT "training"
 )
 ''')
+
+
 
 # Close the cursor and connection
 cursor.close()
@@ -109,6 +113,36 @@ def description():
     description = f.read().strip()
   return [description,url]
 
+@app.route('/change_github_competition_phase', methods=['GET'])
+def change_github_competition_phase():
+  # change the phase of the competition
+  # get the name from the request
+  name = request.args.get('competition')
+  phase = request.args.get('phase')
+  # connect to the database
+  conn = sqlite3.connect('/data/database.db')
+  cursor = conn.cursor()
+  cursor.execute('UPDATE github SET phase="%s" WHERE name="%s"' % (phase,name))
+  conn.commit()
+  cursor.close()
+  conn.close()
+  return {"status": "success"}
+
+@app.route('/get_github_competition_phase', methods=['GET'])
+def get_github_competition_phase():
+  # get the phase of the competition
+  # get the name from the request
+  name = request.args.get('competition')
+  # connect to the database
+  conn = sqlite3.connect('/data/database.db')
+  cursor = conn.cursor()
+  cursor.execute('SELECT phase FROM github WHERE name="%s"' % name)
+  phase = cursor.fetchone()
+  app.logger.warning(phase)
+  cursor.close()
+  conn.close()
+  return {"phase": phase[0]}
+
 @app.route('/add_github_competition', methods=['GET'])
 def add_github_compeition():
   # add github url to the github table of the database
@@ -135,10 +169,6 @@ def add_github_compeition():
     name_file = os.path.join('/data/competitions/%s' % url.split('/')[-1], 'name.txt')
     if not os.path.isfile(name_file):
       return {"status": "Error: name.txt not found"}
-    # check if the dataset folder exist
-    dataset_folder = os.path.join('/data/competitions/%s' % url.split('/')[-1], 'dataset')
-    if not os.path.isdir(dataset_folder):
-      return {"status": "Error: dataset folder not found"}
     # connect to the database
     conn = sqlite3.connect('/data/database.db')
     cursor = conn.cursor()
@@ -148,9 +178,9 @@ def add_github_compeition():
     # insert the url into the database
       
     cursor.execute('''
-      INSERT INTO github (url,name,path)
-      VALUES (?, ?,?)
-    ''', (url,name,url.split('/')[-1]))
+      INSERT INTO github (phase,url,name,path)
+      VALUES (?,?, ?,?)
+    ''', ('training',url,name,url.split('/')[-1]))
     conn.commit()
     cursor.close()
     conn.close()
@@ -287,8 +317,8 @@ def upload_submission():
     # query the github table to get the path
     conn = sqlite3.connect('/data/database.db')
     cursor = conn.cursor()
-    cursor.execute('SELECT name,path FROM github WHERE name="%s"' % competition)
-    name,path = cursor.fetchone()
+    cursor.execute('SELECT name,path,phase FROM github WHERE name="%s"' % competition)
+    name,path,phase = cursor.fetchone()
     competition = name
     if path == None:
       return {"status": "Error: competition not found"}
@@ -307,7 +337,7 @@ def upload_submission():
       model_name = '/server/uploads/' + file.filename
       os.chdir('/data/competitions/%s' % path)
       app.logger.warning(competition)
-      cmd = 'python3 /data/competitions/%s/evaluate.py %s' % (path, model_name)
+      cmd = 'python3 /data/competitions/%s/evaluate.py %s %s' % (path, model_name,phase)
       # execute cmd and get the result
       try:
         ret = os.popen(cmd).read()
@@ -323,13 +353,19 @@ def upload_submission():
     app.logger.warning(result)
     # Insert the submission record into the leaderboard table
     # request.form['email']
+
     try:
       conn = sqlite3.connect('/data/database.db')
       cursor = conn.cursor()
+      cursor.execute('SELECT phase FROM github WHERE name="%s"' % name)
+      phase = cursor.fetchone()
+      cursor.close()
+      app.logger.warning(phase)
+      cursor = conn.cursor()
       cursor.execute('''
-        INSERT INTO submissions (competition,email, accurancy)
-        VALUES (?, ?,?)
-      ''', (competition,email, result['accurancy']))
+        INSERT INTO submissions (competition,email, accurancy,phase)
+        VALUES (?, ?,?,?)
+      ''', (competition,email, result['accurancy'],phase[0]))
       conn.commit()
       cursor.close()
       conn.close()
@@ -416,21 +452,38 @@ def leaderboard():
   # Fetch data from the leaderboard
   conn = sqlite3.connect('/data/database.db')
   cursor = conn.cursor()
-  cursor.execute('SELECT email, timestamp,accurancy FROM submissions WHERE competition="%s" ORDER BY accurancy DESC' % request.args.get('competition'))
+  cursor.execute('SELECT email, timestamp,accurancy FROM submissions WHERE competition="%s" AND phase="training" ORDER BY accurancy DESC' % request.args.get('competition'))
   data = cursor.fetchall()
   cursor.close()
   conn.close()
   
   # Prepare the response
-  leaderboard_data = []
+  leaderboard_data_training = []
   for row in data:
-    leaderboard_data.append({
+    leaderboard_data_training.append({
+      'email': row[0],
+      'timestamp': row[1]+' GMT+0000',
+      'accurancy': row[2]
+    })
+
+  # Fetch data from the leaderboard
+  conn = sqlite3.connect('/data/database.db')
+  cursor = conn.cursor()
+  cursor.execute('SELECT email, timestamp,accurancy FROM submissions WHERE competition="%s" AND phase="testing" ORDER BY accurancy DESC' % request.args.get('competition'))
+  data = cursor.fetchall()
+  cursor.close()
+  conn.close()
+  
+  # Prepare the response
+  leaderboard_data_testing = []
+  for row in data:
+    leaderboard_data_testing.append({
       'email': row[0],
       'timestamp': row[1]+' GMT+0000',
       'accurancy': row[2]
     })
   
-  return jsonify(leaderboard_data)
+  return jsonify({'training':leaderboard_data_training,'testing':leaderboard_data_testing})
 
 @app.route('/vars')
 def show_vars():
@@ -439,7 +492,24 @@ def show_vars():
   return str(headers)
 
 
-
+@app.route('/file')
+def file():
+  # get the compititon name from the request
+  name = request.args.get('competition')
+  filename = request.args.get('path')
+  # get the path from the database
+  conn = sqlite3.connect('/data/database.db')
+  cursor = conn.cursor()
+  cursor.execute('SELECT path FROM github WHERE name="%s"' % name)
+  path = cursor.fetchone()
+  cursor.close()
+  conn.close()
+  # return the file
+  try:
+    f=open('/data/competitions/%s/%s.py' % (path[0],filename), "r")
+  except:
+    return 'Not Available'
+  return f.read()
 
 def hello():
   return 'Hello, World!'

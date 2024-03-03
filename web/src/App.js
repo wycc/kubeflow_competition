@@ -7,7 +7,7 @@ import { TextField } from '@mui/material';
 import Submission from './Submission';
 import LeaderBoard from './LeaderBoard';
 import Manager from './Manager';
-
+import Evaluation from './Evaluation';
 
 export default function App() {
   const [value, setValue] = React.useState('1');
@@ -76,7 +76,8 @@ export default function App() {
           <TabList onChange={handleChange} aria-label="lab API tabs example">
             <Tab label="Submission" value="1" />
             <Tab label="Leader Board" value="2" />
-            {manager && <Tab label="Manager" value="3" />}
+            <Tab label="Evaluation" value="3" />
+            {manager && <Tab label="Manager" value="4" />}
           </TabList>
         </Box>
         <TabPanel value="1">
@@ -85,7 +86,10 @@ export default function App() {
         <TabPanel value="2">
           <LeaderBoard competition={selectedCompetition}/>
         </TabPanel>
-        {manager && <TabPanel value="3">
+        <TabPanel value="3">
+          <Evaluation competition={selectedCompetition}/>
+        </TabPanel>
+        {manager && <TabPanel value="4">
           <Manager competition={selectedCompetition} url={githubUrl} />
           </TabPanel>
         }

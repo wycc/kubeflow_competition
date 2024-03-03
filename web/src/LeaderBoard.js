@@ -1,11 +1,12 @@
 import React from 'react';
+import Paper from '@mui/material/Card';
 
 export default class LeaderBoard extends React.Component {
   constructor() {
     // Add your constructor logic here
     super();
     this.state = {
-      leaderboard: []
+      leaderboard: {'training':[],'testing':[]}
     };
   }
   componentWillUnmount() {
@@ -30,20 +31,49 @@ export default class LeaderBoard extends React.Component {
   // Add your methods here
   render() {
     return (
-      <table><tbody>
-        {this.state.leaderboard.slice(0,20).map((entry, index) => {
-          var date = new Date(entry.timestamp).toLocaleDateString()+" "+new Date(entry.timestamp).toLocaleTimeString();
-          return (
-            <tr key={index}>
-              <td style={{width:'100px'}} >{index+1}</td>
-              <td style={{width:'100px'}} >{entry.email}</td>
-              <td style={{width:'200px'}}>{date}</td>
-              <td style={{width:'100px'}}>{entry.accurancy}</td>
-            </tr>
-          );
-        }
-        )}
-      </tbody></table>
+      <div>
+        <Paper>
+          Training phase results:
+          <br/>
+
+          <table><tbody>
+            {this.state.leaderboard['training'].slice(0,20).map((entry, index) => {
+              var date = new Date(entry.timestamp).toLocaleDateString()+" "+new Date(entry.timestamp).toLocaleTimeString();
+              return (
+                <tr key={index}>
+                  <td style={{width:'100px'}} >{index+1}</td>
+                  <td style={{width:'100px'}} >{entry.email}</td>
+                  <td style={{width:'200px'}}>{date}</td>
+                  <td style={{width:'100px'}}>{entry.accurancy}</td>
+                </tr>
+              );
+            }
+            )}
+          </tbody></table>
+        </Paper>
+        <br/>
+        <br/>
+        <Paper>
+          Tetsing phase results:
+          <br/>
+
+          <table><tbody>
+            {this.state.leaderboard['testing'].slice(0,20).map((entry, index) => {
+              var date = new Date(entry.timestamp).toLocaleDateString()+" "+new Date(entry.timestamp).toLocaleTimeString();
+              return (
+                <tr key={index}>
+                  <td style={{width:'100px'}} >{index+1}</td>
+                  <td style={{width:'100px'}} >{entry.email}</td>
+                  <td style={{width:'200px'}}>{date}</td>
+                  <td style={{width:'100px'}}>{entry.accurancy}</td>
+                </tr>
+              );
+            }
+            )}
+          </tbody></table>
+        </Paper>
+        
+      </div>
     );
   }
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, TextField } from '@mui/material';
 import { Box } from '@mui/system';
 import { LinearProgress } from '@mui/material';
@@ -10,7 +10,17 @@ const Manager = (props) => {
   const [url, setURL] = useState('');
   const [STstatus, setStatus] = useState('');
   const [STprogress, setProgress] = useState(false);
-
+  const [STphase, setSTphase] = useState('training');
+  useEffect(() => {
+    fetch('get_github_competition_phase?competition='+props.competition).then(response => response.json()).then(data => {
+      console.log(data);
+      if (data['phase'] == null) {
+        setSTphase('training');
+      } else {
+        setSTphase(data['phase']);
+      }
+    });
+  },[]);
   const handleFileChange = (event) => {
     setFile(event.target.files[0]);
   };
@@ -106,6 +116,23 @@ const Manager = (props) => {
       }
     });
   }
+  const switch_phase = () => {
+    setStatus('Switching the phase');
+    setProgress(true);
+    var newphase = STphase === 'training' ? 'testing' : 'training';
+    fetch('change_github_competition_phase?competition='+props.competition+'&phase='+newphase).then(response => response.json()).then(data => {
+      console.log(data);
+      if (data['status'] === 'success') {
+        setProgress(false);
+        setSTphase(newphase);
+        //this.setState({status: 'Competition '+data['competition']+' uploaded successfully'});
+      } else {
+        alert('Failed to switch the phase: ' + data['status']);
+        setProgress(false);
+        //this.setState({status: 'Failed to upload the competition: ' + data['status']});
+      }
+    });
+  }
 
   return (
     <div style={{textAlign:'left'}}>
@@ -115,6 +142,14 @@ const Manager = (props) => {
         <br/>
         <Button variant="contained" onClick={delete_github_competition}>Delete current Competition</Button>
         <Button variant="contained" onClick={update_github_competition}>Update current Competition</Button>
+      </Paper>
+      <br/>
+      <br/>
+      <Paper>
+        The behaviour of different phase will be decided by the evaluate.py script in your compeition project.<p/>
+        We are in {STphase} now. Do you want to switch to {STphase === 'training' ? 'testing' : 'training'}?
+        <br/>
+        <Button variant="contained" onClick={switch_phase}>Switch</Button>
       </Paper>
       <br/>
       <Paper>

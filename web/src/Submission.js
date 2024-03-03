@@ -2,6 +2,7 @@ import { LinearProgress } from '@mui/material';
 import React from 'react';
 import { Box } from '@mui/system';
 import Markdown from 'react-markdown';
+import Paper from '@mui/material/Card';
 export default class Submission extends React.Component {
   constructor() {
     super();
@@ -60,18 +61,23 @@ export default class Submission extends React.Component {
       );
     }
     return (
-      <div>
-        <input type="file" onChange={this.handleFileChange} />
-        <button onClick={this.handleFileUpload}>Upload</button>
-        <div>
-          {this.state.progress && <Box sx={{width:'100%'}}> <LinearProgress /></Box>}
-          {this.state.status}
-        </div>
-        <div style={{overflowY:'scroll',height:h,backgroundColor:'#ddd',textAlign: 'left'}}>
+      <div style={{textAlign:'left'}}>
+        <Paper>
+          <input type="file" onChange={this.handleFileChange} />
+          <button onClick={this.handleFileUpload}>Upload</button>
+        </Paper>
+        <br/>
+        <Paper>
           <div>
-            <Markdown>{this.props.description}</Markdown>
+            {this.state.progress && <Box sx={{width:'100%'}}> <LinearProgress /></Box>}
+            {this.state.status}
           </div>
-        </div>
+          <div style={{overflowY:'scroll',height:h,backgroundColor:'#ddd',textAlign: 'left'}}>
+            <div>
+              <Markdown>{this.props.description}</Markdown>
+            </div>
+          </div>
+        </Paper>
       </div>
     );
   }

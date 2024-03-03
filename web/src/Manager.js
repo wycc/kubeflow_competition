@@ -159,21 +159,23 @@ const Manager = (props) => {
       </Paper>
       <br/>
       <Paper>
-Please host your competition project on the github and provide the URL here. You need to have
-<ul>
-<li>description.txt
-  <ul><li> A description, which will be displayed in the submission page. </li></ul>
-</li>
-<li> evaluation.py
-  <ul><li> A script to evalute the submission model file</li></ul>
-</li>
-<li> dataset 
-  <ul><li> A folder containing the test dataset</li></ul>
-</li>
-<li>name.txt
-  <ul><li> the display name of the competition. The name will be displayed in the dropdown menu of the competition selection.</li></ul>
-</li>
-</ul>
+        Please host your competition project on the github and provide the URL here. You need to have
+        <ul>
+        <li>description.txt
+          <ul><li> A description, which will be displayed in the submission page. </li></ul>
+        </li>
+        <li> evaluation.py
+          <ul><li> A script to evalute the submission model file</li></ul>
+        </li>
+        <li> dataset 
+          <ul><li> A folder containing the test dataset</li></ul>
+        </li>
+        <li>name.txt
+          <ul><li> the display name of the competition. The name will be displayed in the dropdown menu of the competition selection.</li></ul>
+        </li>
+        </ul>
+        Please refer to this <a href="https://github.com/wycc/comp1">link</a> as an example.
+
       </Paper>
       <br/>
       <Paper>

@@ -421,13 +421,16 @@ def competitions():
   conn.close()
   for row in data:
     # read description.txt from the directory under /data/competitions/name/description.txt
-    f=open('/data/competitions/%s/description.txt' % row[1], "r")
-    description = f.read()
+    try:
+      f=open('/data/competitions/%s/description.txt' % row[1], "r")
+      description = f.read()
 
-    competition_list.append({
-      'name': row[0],
-      'description': description
-    })
+      competition_list.append({
+        'name': row[0],
+        'description': description
+      })
+    except:
+      continue
 
   # Iterate over the folders in the competitions directory
   #for folder_name in os.listdir(competitions_dir):

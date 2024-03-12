@@ -174,7 +174,7 @@ const Manager = (props) => {
           <ul><li> the display name of the competition. The name will be displayed in the dropdown menu of the competition selection.</li></ul>
         </li>
         </ul>
-        Please refer to this <a href="https://github.com/wycc/comp1">link</a> as an example.
+        Please refer to this <a href="https://github.com/wycc/comp1" target="_blank">link</a> as an example.
 
       </Paper>
       <br/>

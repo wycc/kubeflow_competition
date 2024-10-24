@@ -67,9 +67,9 @@ export default class Submission extends React.Component {
       <div style={{textAlign:'left'}}>
         <Stack spacing={2}>
           <Item>
-            <Card>
+            <Card style={{maxHeight:'200px',overflow:'auto'}}>
                 {this.state.progress && <Box sx={{width:'100%'}}> <LinearProgress /></Box>}
-                <div style={{paddingLeft:'20px',paddingRight:'20px',fontSize:'24px',color:'white',backgroundColor:'ActiveCaption'}}>{this.state.status}</div>
+                <pre style={{paddingLeft:'12px',paddingRight:'20px',fontSize:'24px',color:'white',backgroundColor:'ActiveCaption'}}>{this.state.status}</pre>
                 <Divider />
                 <input type="file" onChange={this.handleFileChange} />
                 <br />

@@ -147,10 +147,24 @@ def get_github_competition_phase():
 def add_github_compeition():
   # add github url to the github table of the database
   # get the url from the request
+  # check if the url exists in the database
+  conn = sqlite3.connect('/data/database.db')
+  cursor = conn.cursor()
+  url = request.args.get('url')
+  cursor.execute('SELECT name FROM github WHERE url="%s"' % url)
+  name = cursor.fetchone()
+  cursor.close()
+  conn.close()
+  if name != None:
+    return {"status": "Error: the url already exists"}
   try:
     url = request.args.get('url')
+    path = url.split('/')[-1]
     # delete the old repository if it exists
-    os.system('rm -rf /data/competitions/%s' % url.split('/')[-1])
+    if path != '' and os.path.exists('/data/competitions/%s' % path):
+      os.system('rm -rf /data/competitions/%s' % url.split('/')[-1])
+    else:
+      pass
     # pull the repository
     os.chdir('/data/competitions')
     r=os.system('git clone %s /data/competitions/%s' % (url, url.split('/')[-1]))
@@ -249,7 +263,10 @@ def delete_github_competition():
     app.logger.warning(items)
     name,path = items
     # delete the repository
-    os.system('rm -rf /data/competitions/%s' % path)
+    if path != '' and os.path.exists('/data/competitions/%s' % path):
+      os.system('rm -rf /data/competitions/%s' % path)
+    else:
+      return {"status": "Error: the repository does not exist"}
     # delete the record from the database
     cursor.execute('DELETE FROM github WHERE name="%s"' % name)
     conn.commit()
@@ -337,7 +354,7 @@ def upload_submission():
       model_name = '/server/uploads/' + file.filename
       os.chdir('/data/competitions/%s' % path)
       app.logger.warning(competition)
-      cmd = 'python3 /data/competitions/%s/evaluate.py %s %s' % (path, model_name,phase)
+      cmd = 'python3 /data/competitions/%s/evaluate.py %s %s 2>&1' % (path, model_name,phase)
       # execute cmd and get the result
       try:
         ret = os.popen(cmd).read()
@@ -373,7 +390,7 @@ def upload_submission():
       print(e)
       return {"status": "Error inserting record into the leaderboard: " + str(e)}
     
-    return result
+    return {"status": "success: "+result['accurancy']}
   else:
     # Return error if the file is not a PyTorch weights file
     return {"status": "File is not a PyTorch weights file"}

@@ -24,7 +24,7 @@ spec:
                       - master-dev
       containers:
         - name: my-container
-          image: wycca1/competition:1.1.6
+          image: wycca1/competition:1.1.9
           ports:
             - containerPort: 8888
           volumeMounts:

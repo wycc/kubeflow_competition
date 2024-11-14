@@ -382,7 +382,7 @@ def upload_submission():
       cursor.execute('''
         INSERT INTO submissions (competition,email, accurancy,phase)
         VALUES (?, ?,?,?)
-      ''', (competition,email, result['accurancy'],phase[0]))
+      ''', (competition,email, result['accuracy'],phase[0]))
       conn.commit()
       cursor.close()
       conn.close()
@@ -390,7 +390,7 @@ def upload_submission():
       print(e)
       return {"status": "Error inserting record into the leaderboard: " + str(e)}
     
-    return {"status": "success: "+result['accurancy']}
+    return {"status": f"result: {result['accuracy']}"}
   else:
     # Return error if the file is not a PyTorch weights file
     return {"status": "File is not a PyTorch weights file"}
